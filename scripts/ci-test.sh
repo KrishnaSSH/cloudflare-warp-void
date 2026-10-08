@@ -88,6 +88,10 @@ fi
 [ -s "$OUT/gui-windows.txt" ] || { cat "$OUT/gui.log"; fail "GUI window never appeared"; }
 echo "GUI window(s): $(tr '\n' ' ' <"$OUT/gui-windows.txt")"
 
+step "Re-running install.sh is safe"
+REPO_URL=$REPO_URL sh "$HERE/install.sh"
+sv status /etc/sv/warp-svc
+
 step "Remove package cleanly"
 sv force-stop /etc/sv/warp-svc || true
 sv exit /etc/sv/warp-svc || true

@@ -50,7 +50,13 @@ PLIST
 
 # stdin may be this script (curl | sh): never let xbps read from it.
 echo ">> Installing cloudflare-warp"
-xbps-install -Sy cloudflare-warp </dev/null
+force=
+if xbps-query cloudflare-warp >/dev/null 2>&1 &&
+	[ "$(xbps-query -p repository cloudflare-warp)" != "$REPO_URL" ]; then
+	# Installed from somewhere else (e.g. a local/xdeb build): replace it.
+	force=-f
+fi
+xbps-install -Sy $force cloudflare-warp </dev/null
 
 if [ -d /var/service ] && [ ! -e /var/service/warp-svc ]; then
 	echo ">> Enabling warp-svc service"
