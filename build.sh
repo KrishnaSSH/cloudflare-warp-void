@@ -11,6 +11,8 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 APT_URL=https://pkg.cloudflareclient.com
 APT_SUITE=noble
+# Cloudflare Package Repository signing key (keys/cloudflare-pkg.gpg)
+CF_KEY_FPR=C068A2B5771775193CBE1F2F6E2DD2174FA1C3BA
 ARCH=$(xbps-uhelper arch 2>/dev/null || uname -m)
 VERSION=
 LOCAL_DEB=
@@ -43,9 +45,12 @@ OUTDIR=$(realpath "$OUTDIR")
 # --- locate and verify the upstream .deb ------------------------------------
 msg "Fetching signed apt index ($APT_SUITE/$DEB_ARCH)"
 curl -fsSL "$APT_URL/dists/$APT_SUITE/InRelease" -o "$WORK/InRelease"
-gpg --dearmor <"$HERE/keys/cloudflare-pkg.gpg" >"$WORK/cloudflare.kbx"
-gpgv --keyring "$WORK/cloudflare.kbx" --output "$WORK/Release" "$WORK/InRelease" 2>/dev/null ||
-	{ echo "InRelease signature verification FAILED" >&2; exit 1; }
+mkdir -m700 "$WORK/gnupg"
+gpg() { command gpg --batch --quiet --no-tty --homedir "$WORK/gnupg" "$@"; }
+gpg --import "$HERE/keys/cloudflare-pkg.gpg" 2>/dev/null
+gpg --status-fd 3 --output "$WORK/Release" --decrypt "$WORK/InRelease" 3>"$WORK/gpg.status" 2>/dev/null || :
+grep -q "^\[GNUPG:\] VALIDSIG .* $CF_KEY_FPR\$" "$WORK/gpg.status" && [ -s "$WORK/Release" ] ||
+	{ echo "InRelease signature verification FAILED" >&2; cat "$WORK/gpg.status" >&2; exit 1; }
 
 curl -fsSL "$APT_URL/dists/$APT_SUITE/main/binary-$DEB_ARCH/Packages" -o "$WORK/Packages"
 pkgs_sum=$(sha256sum "$WORK/Packages" | cut -d' ' -f1)
