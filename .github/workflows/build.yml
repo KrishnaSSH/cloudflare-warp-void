@@ -1,0 +1,168 @@
+name: Build & publish
+
+on:
+  schedule:
+    - cron: "23 */6 * * *" # check Cloudflare for a new release every 6 hours
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild and re-publish even if this version is already released
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  pull_request:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VOID_IMAGE: ghcr.io/void-linux/void-glibc-full:latest
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      build: ${{ steps.v.outputs.build }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          version=$(curl -fsSL https://pkg.cloudflareclient.com/dists/noble/main/binary-amd64/Packages \
+            | awk '/^Package: /{p=$2} /^Version: /{if(p=="cloudflare-warp")print $2}' | sort -V | tail -n1)
+          [ -n "$version" ] || { echo "could not determine upstream version"; exit 1; }
+          tag="v${version}_$(cat REVISION)"
+          if gh release view "$tag" >/dev/null 2>&1; then released=true; else released=false; fi
+          build=true; publish=false
+          case "$EVENT" in
+            schedule) $released && build=false || publish=true ;;
+            workflow_dispatch) { ! $released || [ "$FORCE" = true ]; } && publish=true ;;
+            push) $released || publish=true ;;
+          esac
+          echo "upstream=$version tag=$tag released=$released build=$build publish=$publish"
+          { echo "version=$version"; echo "tag=$tag"; echo "build=$build"; echo "publish=$publish"; } >>"$GITHUB_OUTPUT"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:latest
+      options: --privileged
+    steps:
+      - name: Prepare Void container
+        run: |
+          xbps-install -Syu xbps
+          xbps-install -Syu
+          xbps-install -y bash git curl gnupg binutils openssl python3 runit shadow util-linux \
+            dbus xorg-server-xvfb xdotool ImageMagick
+      - uses: actions/checkout@v4
+
+      - name: Build .xbps
+        run: ./build.sh -a ${{ matrix.arch }} -v "${{ needs.check.outputs.version }}" -o repo
+
+      - name: Index and sign repository
+        env:
+          XBPS_SIGNING_KEY: ${{ secrets.XBPS_SIGNING_KEY }}
+        run: |
+          if [ -n "$XBPS_SIGNING_KEY" ]; then
+            printf '%s\n' "$XBPS_SIGNING_KEY" >/tmp/key.pem
+          else
+            # Forks / PRs without the secret: test with a throwaway key.
+            openssl genrsa -out /tmp/key.pem 4096
+            echo "UNSIGNED_TEST=1" >>"$GITHUB_ENV"
+          fi
+          scripts/mkrepo.sh repo /tmp/key.pem
+          rm -f /tmp/key.pem
+
+      - name: End-to-end test (install, daemon, connect, GUI)
+        run: |
+          if [ -n "${UNSIGNED_TEST:-}" ]; then sed -i '/^KEY=/,/^PLIST$/d' install.sh; fi
+          (cd repo && python3 -m http.server 8000 --bind 127.0.0.1 >/dev/null 2>&1 &)
+          sleep 2
+          if [ -n "${UNSIGNED_TEST:-}" ]; then printf 'y\n' | xbps-install -S -R http://127.0.0.1:8000 || true; fi
+          scripts/ci-test.sh http://127.0.0.1:8000 test-artifacts
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-${{ matrix.arch }}
+          path: test-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repo-${{ matrix.arch }}
+          path: repo/
+          retention-days: 7
+
+  release:
+    needs: [check, build]
+    if: needs.check.outputs.publish == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: repo-*
+          path: repo
+          merge-multiple: true
+      - name: Publish GitHub release (the xbps repository)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.check.outputs.tag }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          ls -l repo
+          cat >notes.md <<EOF
+          Cloudflare WARP **$VERSION** repackaged for Void Linux (x86_64, aarch64), built and tested by CI.
+
+          Install / update:
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/$GH_REPO/main/install.sh | sudo sh
+          \`\`\`
+          or manually: \`echo repository=https://github.com/$GH_REPO/releases/latest/download | sudo tee /etc/xbps.d/20-cloudflare-warp.conf\`
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" repo/* --clobber
+          else
+            gh release create "$TAG" repo/* --title "cloudflare-warp $VERSION" --notes-file notes.md --latest
+          fi
+
+  verify-release:
+    needs: [check, release]
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:latest
+      options: --privileged
+    steps:
+      - run: |
+          xbps-install -Syu xbps
+          xbps-install -Syu
+          xbps-install -y bash git curl runit shadow util-linux dbus xorg-server-xvfb xdotool ImageMagick
+      - uses: actions/checkout@v4
+      - name: Install from the published GitHub repository
+        run: scripts/ci-test.sh "https://github.com/${{ github.repository }}/releases/latest/download" test-artifacts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verify-release
+          path: test-artifacts/

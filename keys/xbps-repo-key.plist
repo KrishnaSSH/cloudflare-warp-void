@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>public-key</key>
+	<data>LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQ0lqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FnOEFNSUlDQ2dLQ0FnRUFtb3JiL3RKaDgwZnRON1A5TzIwagpveTd5cGZacjhvUWRvUStqL2lXa1VaQkZHQWRSU1lscFVCTjZHem9la3ZVVkcyUHk5cXJhZk1pYUc4K2lvWFRnCkN0dDFQbGYyclN2VU1uTnVJRnRBdDkrakdvbFJndVhBRXRkQTlNYWM1TFdqK0xQODlOTklNcGtQYjZSR1ZiOHcKcGhOV0ZtSnlNSk1wdWVicXpzNFRDNFdhV0hUYnF0dkhMWFJYTmtxQjhVVDlyLzV0a3JGdUplWmRYaUpyUmI1awptaWd6UnFtQlkweFhVbjgxNzRQMVB0NWh5N2ZXcG8xOSt6MWZRaWlvT3RUNms5T0JqLzY0MGJRb3JFc0trVFJ6Ckt3WHRENXhtRjdOTE5BWXhON0NTak1GMmlnMHJtRzJKWWF1VzlybnZvQ2kxZDZlYXJ2Vk00eEZTTG9oREdWbWwKWVRHZFlHN29wWURMcktFOUdJejFPK2xtV1A0TU9LeVlXeCtqYmFzcVUzRFplVDRtVXdLSFE4VVBGelZ3bS9WWQpwOExLbm9GL3BOcWNmQzZMU0lvLzZGam5BM3IvdVNaSXRzZEVrVkFreHFVazFWK1UzczhxaHBnSWhkRDRlOG9NCjJuNWY3VnFwMC9hckZQTWNpVXVYMDlDTnBtR2FsTXhnRjhGVGVLekxkR2Uxek9qUmFic0lNWW9ESlRINWFOamIKS3dRcXRwZGxBN3d1R1B4ZWpTRWwyakdNUXhSVjNTTUhscjNkU1dQalh5emJXeWtKSXg0Z2xUWGlwcmcxOEpqbwpJWXhDV1pZbStsSGdVMjRyZ2RVOXNMMEEzNWsyMldrLytxdm1SK2xKL0lkSUl4U2tZcklaTDArZ29kMmtkaC9WCklyUUlCYkJPOUwzd2dLQVVuckc4MnlNQ0F3RUFBUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQo=</data>
+	<key>public-key-size</key>
+	<integer>4096</integer>
+	<key>signature-by</key>
+	<string>cloudflare-warp-void &lt;https://github.com/KrishnaSSH/cloudflare-warp-void&gt;</string>
+</dict>
+</plist>

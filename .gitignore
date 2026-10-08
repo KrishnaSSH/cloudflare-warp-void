@@ -1,0 +1,6 @@
+*.deb
+out/
+repo/
+test-artifacts/
+.sentry-native/
+*.pem

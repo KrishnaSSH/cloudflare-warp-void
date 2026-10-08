@@ -1,0 +1,20 @@
+Cloudflare WARP on Void Linux
+=============================
+
+This package is the official Cloudflare .deb repackaged for xbps/runit.
+
+Daemon (required):
+    sudo ln -s /etc/sv/warp-svc /var/service/
+    sv status warp-svc
+
+CLI:
+    warp-cli registration new      # first time only (accepts the ToS prompt)
+    warp-cli connect
+    warp-cli status
+
+GUI / tray (Cloudflare One Client):
+    warp-taskbar
+  It lives in the system tray (StatusNotifierItem). Desktops that honour
+  /etc/xdg/autostart start it on login; for sway/hyprland/i3 etc. add
+  `exec warp-taskbar` to your compositor config. Your bar needs a tray
+  (waybar "tray" module, swaybar, ...). Click the tray icon to open the window.

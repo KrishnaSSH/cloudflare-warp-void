@@ -1,0 +1,5 @@
+#!/bin/sh
+# Cloudflare WARP daemon. Enable with: ln -s /etc/sv/warp-svc /var/service/
+exec 2>&1
+mkdir -p /var/lib/cloudflare-warp /var/log/cloudflare-warp /run/cloudflare-warp
+exec /usr/bin/warp-svc

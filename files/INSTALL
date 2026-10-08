@@ -1,0 +1,27 @@
+# xbps INSTALL script for cloudflare-warp
+# args: ACTION PKGNAME VERSION UPDATE CONF_FILE ARCH
+case "$1" in
+post)
+	mkdir -p var/lib/cloudflare-warp var/log/cloudflare-warp
+	if command -v update-desktop-database >/dev/null 2>&1; then
+		update-desktop-database -q usr/share/applications 2>/dev/null || :
+	fi
+	if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+		gtk-update-icon-cache -q -t -f usr/share/icons/hicolor 2>/dev/null || :
+	fi
+	if [ "$4" = yes ] && [ -e var/service/warp-svc ]; then
+		# Upgrade: restart the running daemon on the new binary.
+		sv restart warp-svc >/dev/null 2>&1 || :
+	elif [ ! -e var/service/warp-svc ]; then
+		cat <<'MSG'
+=========================================================================
+ cloudflare-warp: enable the daemon with
+     sudo ln -s /etc/sv/warp-svc /var/service/
+ then register and connect:
+     warp-cli registration new && warp-cli connect
+ GUI/tray: run `warp-taskbar` (it autostarts via /etc/xdg/autostart).
+=========================================================================
+MSG
+	fi
+	;;
+esac

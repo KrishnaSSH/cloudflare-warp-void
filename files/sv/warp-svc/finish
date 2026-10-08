@@ -1,0 +1,4 @@
+#!/bin/sh
+# Make sure no WARP firewall rules are left behind if the daemon died.
+nft delete table inet cloudflare-warp 2>/dev/null
+exit 0

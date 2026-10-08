@@ -1,0 +1,15 @@
+# xbps REMOVE script for cloudflare-warp
+# args: ACTION PKGNAME VERSION UPDATE CONF_FILE ARCH
+case "$1" in
+pre)
+	[ "$4" = yes ] && exit 0
+	if [ -e var/service/warp-svc ]; then
+		sv force-stop warp-svc >/dev/null 2>&1 || :
+		rm -f var/service/warp-svc
+	fi
+	nft delete table inet cloudflare-warp >/dev/null 2>&1 || :
+	;;
+purge)
+	rm -rf var/lib/cloudflare-warp var/log/cloudflare-warp
+	;;
+esac
