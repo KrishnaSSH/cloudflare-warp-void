@@ -75,7 +75,7 @@ jobs:
           xbps-install -Syu xbps
           xbps-install -Syu
           xbps-install -y bash git curl gnupg binutils openssl python3 runit shadow util-linux \
-            dbus xorg-server-xvfb xdotool ImageMagick
+            dbus mesa-dri xorg-server-xvfb xdotool ImageMagick
       - uses: actions/checkout@v4
 
       - name: Build .xbps
@@ -157,7 +157,7 @@ jobs:
       - run: |
           xbps-install -Syu xbps
           xbps-install -Syu
-          xbps-install -y bash git curl runit shadow util-linux dbus xorg-server-xvfb xdotool ImageMagick
+          xbps-install -y bash git curl runit shadow util-linux dbus mesa-dri xorg-server-xvfb xdotool ImageMagick
       - uses: actions/checkout@v4
       - name: Install from the published GitHub repository
         run: scripts/ci-test.sh "https://github.com/${{ github.repository }}/releases/latest/download" test-artifacts

@@ -114,8 +114,9 @@ sed -e '/^DBusActivatable=/d' "$DEST/usr/share/applications/com.cloudflare.WarpT
 
 # runit service for the daemon (replaces upstream's warp-svc.service).
 cp -a "$HERE/files/sv" "$DEST/etc/sv"
-chmod 755 "$DEST"/etc/sv/warp-svc/*
+chmod 755 "$DEST"/etc/sv/warp-svc/run "$DEST"/etc/sv/warp-svc/finish "$DEST"/etc/sv/warp-svc/log/run
 ln -s /run/runit/supervise.warp-svc "$DEST/etc/sv/warp-svc/supervise"
+ln -s /run/runit/supervise.warp-svc-log "$DEST/etc/sv/warp-svc/log/supervise"
 
 install -Dm644 "$HERE/files/README.voidlinux" "$DEST/usr/share/doc/cloudflare-warp/README.voidlinux"
 install -m644 "$HERE/files/INSTALL" "$HERE/files/REMOVE" "$DEST/"
