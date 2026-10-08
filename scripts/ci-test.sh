@@ -25,8 +25,8 @@ xbps-query cloudflare-warp | grep -E '^(pkgver|repository):'
 xbps-pkgdb cloudflare-warp
 
 step "Shared libraries resolve"
-missing=$(for f in /usr/bin/warp-{cli,svc,diag,dex} /usr/lib/warp/warp-taskbar /usr/lib/warp/lib/*.so; do
-	ldd "$f" | grep 'not found' | grep -v libjvm | sed "s|^|$f: |" || true
+missing=$(for f in /usr/bin/warp-{cli,svc,diag,dex} /usr/lib/warp/warp-taskbar /usr/lib/warp/lib/*.so; do  # plugins resolve libflutter via the exe RUNPATH
+	LD_LIBRARY_PATH=/usr/lib/warp/lib ldd "$f" 2>/dev/null | grep 'not found' | grep -v libjvm | sed "s|^|$f: |" || true
 done)
 [ -z "$missing" ] || fail "missing libraries:
 $missing"
